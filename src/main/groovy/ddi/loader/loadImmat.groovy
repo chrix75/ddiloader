@@ -30,17 +30,28 @@ def long endBlock
 def session = driver.session()
 
 int counter = 0
+def tx = session.beginTransaction()
 f.eachLine {
 
     ++counter
+/*
 
-    if (counter % 10_000 == 0) {
+    if (counter % 1000 == 0) {
+        tx.success()
         println "Closing..."
-        session.close()
+        //session.close()
+        //session = driver.session()
+        tx = session.beginTransaction()
+    }
+*/
+
+    if (counter % 5_000 == 0) {
+        tx.success()
         endBlock = System.currentTimeMillis()
         println "Writes: $counter (duration: ${(endBlock - startBlock) / 1000} s"
         startBlock = endBlock
-        session = driver.session()
+        tx.close()
+        tx = session.beginTransaction()
     }
 
     if (counter > 1) {
@@ -48,8 +59,10 @@ f.eachLine {
         def values = loader.values(fields)
 
 
-        session.run(query,
+        tx.run(query,
                     Values.parameters(
+                            'id', counter,
+                            'name', '',
                             'siren', Long.parseLong(values['IM_SIRENCCD']),
                             'immat', values['IM_NUMIMMAT'],
                             'dateCarteGrise', Integer.parseInt(values['IM_DATCARTGRIS']),
@@ -75,6 +88,8 @@ f.eachLine {
     }
 }
 
+tx.success()
+tx.close()
 println "Closing..."
 session.close()
 driver.close()
