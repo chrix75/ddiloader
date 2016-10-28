@@ -1,4 +1,4 @@
-package ddi.loader.improved
+package ddi.loader
 
 /**
  * Created by batman on 23/10/2016.

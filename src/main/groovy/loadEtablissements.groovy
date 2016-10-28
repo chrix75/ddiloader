@@ -1,7 +1,4 @@
-package ddi.loader.improved
-
-import org.neo4j.driver.v1.AuthTokens
-import org.neo4j.driver.v1.GraphDatabase
+import ddi.loader.neo4j.GraphDb
 import org.neo4j.driver.v1.Transaction
 import org.neo4j.driver.v1.Values
 

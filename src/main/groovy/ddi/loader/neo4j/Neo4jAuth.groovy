@@ -1,4 +1,4 @@
-package ddi.loader.improved
+package ddi.loader.neo4j
 
 /**
  * Created by batman on 26/10/2016.
