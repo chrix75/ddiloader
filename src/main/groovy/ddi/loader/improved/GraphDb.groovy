@@ -45,11 +45,11 @@ class GraphDb {
         def reader = inputFile.newReader()
 
         // jumps the header
-        println "Jumps the header"
-        reader.readLine()
-
+        println "Reads the header"
+        csvHeader = new CsvHeader(reader.readLine())
 
         long totalDuration = 0
+        def tx = session.beginTransaction()
         try {
             int count = 0
 
@@ -57,7 +57,7 @@ class GraphDb {
 
             long startBlock = System.currentTimeMillis()
 
-            def tx = session.beginTransaction()
+
             reader.eachLine {
                 ++count
 
@@ -65,18 +65,26 @@ class GraphDb {
                     def duration = System.currentTimeMillis() - startBlock
                     println "$count records (${duration / 1000} s)"
                     startBlock = System.currentTimeMillis()
-                    totalDuration+= duration
+                    totalDuration += duration
                 }
 
-                if (count % 1000 == 0) {
+                if (count % 500 == 0) {
                     tx.success()
-
+                    tx.close()
+                    tx = session.beginTransaction()
                 }
 
                 def fields = it.split(';', -1)
 
-
+                fn(tx, csvHeader.values(fields))
             }
+
+            tx.success()
+            tx.close()
+        } catch (Exception e) {
+            e.printStackTrace()
+            tx.failure()
+            tx.close()
         } finally {
             println "Close the DB connection"
             close()

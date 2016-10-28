@@ -1,7 +1,5 @@
 package ddi.loader.improved
 
-import ddi.loader.Loader
-
 /**
  * Created by batman on 23/10/2016.
  */
