@@ -62,14 +62,16 @@ class GraphDb {
             reader.eachLine {
                 ++count
 
-                if (count % 10000 == 0) {
+
+
+                if (count % 10_000 == 0) {
                     def duration = System.currentTimeMillis() - startBlock
                     println "$count records (${duration / 1000} s)"
                     startBlock = System.currentTimeMillis()
                     totalDuration += duration
                 }
 
-                if (count % 500 == 0) {
+                if (count % 1000 == 0) {
                     tx.success()
                     tx.close()
                     tx = session.beginTransaction()

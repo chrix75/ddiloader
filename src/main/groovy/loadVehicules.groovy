@@ -31,6 +31,9 @@ def queryImmat = 'create (v:Vehicule {' +
         'id: {id},' +
         'name: {name},' +
         'immat: {immat},' +
+        'topGenre: {topGenre},' +
+        'energie: {energie},' +
+        'marque: {marque},' +
         'premiereCirculation: {date},' +
         'co2: {co2},' +
         'neuf: {neuf}' +
@@ -39,25 +42,23 @@ def queryImmat = 'create (v:Vehicule {' +
         'match (e:Entreprise {siren: {siren}}) ' +
         'create (e)-[:POSSEDE]->(v)'
 
-//TODO Query for brand
-
-//TODO Query for sort of vehicle
-
-//TODO Query for sort of energy
-
-
 int id = 0
+def params = [:]
 db.load { Transaction tx, Map<String, String> record ->
     ++id
 
-    tx.run(queryImmat, Values.parameters(
-            'siren', Long.parseLong(record['SIREN']),
-            'id', id,
-            'name', null,
-            'immat', record['IM_NUMIMMAT'],
-            'date', dateConverter.convertDate(record['IM_DAT1MCIR']),
-            'co2', Integer.parseInt(record['IM_TXCO2']),
-            'neuf', record['IM_NEUFOCCAS'] == 'N'
-    ))
+    String co2Value = record['IM_TXCO2']
 
+    params['siren'] = Long.parseLong(record['SIREN'])
+    params['id'] = id
+    params['name'] = null
+    params['topGenre'] = record['IM_CDTOPGENRE']
+    params['marque'] = record['IM_CDMARQUE']
+    params['energie'] = record['IM_CDTYPENE']
+    params['immat'] = record['IM_NUMIMMAT']
+    params['date'] = dateConverter.convertDate(record['IM_DAT1MCIR'])
+    params['co2'] = co2Value ? Integer.parseInt(co2Value) : null
+    params['neuf'] = record['IM_NEUFOCCAS'] == 'N'
+
+    tx.run(queryImmat, params)
 }

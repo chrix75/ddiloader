@@ -1,4 +1,5 @@
 import ddi.loader.neo4j.GraphDb
+import org.neo4j.driver.v1.Record
 import org.neo4j.driver.v1.Transaction
 import org.neo4j.driver.v1.Values
 
@@ -34,8 +35,7 @@ def queryEtab = 'create (:Etablissement {siret: {siret}, ' +
         'batiment: {batiment},' +
         'motRech: {motRech},' +
         'telephone: {telephone}, ' +
-        'fax: {fax},' +
-        'nbImmat: {nbImmat}' +
+        'fax: {fax}' +
         '})'
 
 def queryGeo = 'merge (r:Region { region: {region} }) ' +
@@ -56,7 +56,7 @@ def queryApet = 'merge (apet700:Ape700 {code: {code700} }) ' +
         'merge (e)-[:COMME_ACTIVITE]->(apet3) ' +
         'merge (e)-[:COMME_ACTIVITE]->(apet2)'
 
-def queryEntreprise = 'merge (n:Entreprise { siren: {siren} }) ' +
+def queryEntreprise = 'merge (n:Entreprise { siren: {siren}, nbImmat: {nbImmat} }) ' +
         'with n ' +
         'match (e:Etablissement { siret: {siret} })' +
         'merge (n)-[:GERE]->(e)'
@@ -71,56 +71,53 @@ def queryApen = 'merge (apen700:Ape700 {code: {code700} }) ' +
         'merge (e)-[:COMME_ACTIVITE]->(apen2)'
 
 int id = 0
+def etabParams = [:]
+def geoParams = [:]
+def apetParams = [:]
+def apenParams = [:]
+def entrParams = [:]
+
 db.load { Transaction tx, Map<String, String> record ->
     ++id
 
-    tx.run(queryEtab,
-           Values.parameters(
-                   "siret", Long.parseLong(record["SIRET"]),
-                   "rs", record["L1_NOMEN"],
-                   "rs2", record["L2_COMP"],
-                   "rs3", record["ENSEIGNE"],
-                   "siege", record["SIEGE"] == '1',
-                   "adresse", record["L4_ADR"],
-                   "batiment", record["L3_CADR"],
-                   "motRech", record["MOTRECH"],
-                   "telephone", record["TEL_GEN"],
-                   "fax", record["FAX_GEN"],
-                   "nbImmat", Integer.parseInt(record["PA_NBIMMAT"] ? record["PA_NBIMMAT"] : '0'),
-                   "id", id,
-                   "name", null
-           ))
+    etabParams['siret'] = Long.parseLong(record['SIRET'])
+    etabParams['rs'] = record['L1_NOMEN']
+    etabParams['rs2'] = record['L2_COMP']
+    etabParams['rs3'] = record['ENSEIGNE']
+    etabParams['siege'] = record['SIEGE'] == '1'
+    etabParams['adresse'] = record['L4_ADR']
+    etabParams['batiment'] = record['L3_CADR']
+    etabParams['motRech'] = record['MOTRECH']
+    etabParams['telephone'] = record['TEL_GEN']
+    etabParams['fax'] = record['FAX_GEN']
+    etabParams['id'] = id
+    etabParams['name'] = null
+    tx.run(queryEtab, etabParams)
 
-    tx.run(queryGeo,
-           Values.parameters(
-                   'region', Integer.parseInt(record['RPET']),
-                   'dpt', Integer.parseInt(record['DPT']),
-                   'codePostal', Integer.parseInt(record['CODPOS']),
-                   'ville', record['ACHEM'],
-                   'siret', Long.parseLong(record['SIRET'])
-           ))
 
-    tx.run(queryApet,
-           Values.parameters(
-                   'code700', record['APET700'],
-                   'code3', record['APET3'],
-                   'code2', record['APET2'],
-                   'siret', Long.parseLong(record['SIRET'])
-           ))
+    geoParams['region'] = Integer.parseInt(record['RPET'])
+    geoParams['dpt'] = Integer.parseInt(record['DPT'])
+    geoParams['codePostal'] = Integer.parseInt(record['CODPOS'])
+    geoParams['ville'] = record['ACHEM']
+    geoParams['siret'] = Long.parseLong(record['SIRET'])
+    tx.run(queryGeo, geoParams)
 
-    tx.run(queryEntreprise,
-           Values.parameters(
-                   'siren', Long.parseLong(record['SIREN']),
-                   'siret', Long.parseLong(record['SIRET'])
-           ))
+    apetParams['code700'] =  record['APET700']
+    apetParams['code3'] =  record['APET3']
+    apetParams['code2'] =  record['APET2']
+    apetParams['siret'] =  Long.parseLong(record['SIRET'])
+    tx.run(queryApet, apetParams)
 
-    tx.run(queryApen,
-           Values.parameters(
-                   'code700', record['APEN700'],
-                   'code3', record['APEN3'],
-                   'code2', record['APEN2'],
-                   'siren', Long.parseLong(record['SIREN'])
-           ))
+    entrParams['siren'] =  Long.parseLong(record['SIREN'])
+    entrParams['siret'] =  Long.parseLong(record['SIRET'])
+    entrParams['nbImmat'] = Integer.parseInt(record['PA_NBIMMAT'] ? record['PA_NBIMMAT'] : '0')
+    tx.run(queryEntreprise, entrParams)
+
+    apenParams['code700'] =  record['APEN700']
+    apenParams['code3'] =  record['APEN3']
+    apenParams['code2'] =  record['APEN2']
+    apenParams['siren'] =  Long.parseLong(record['SIREN'])
+    tx.run(queryApen,apenParams)
 }
 
 
