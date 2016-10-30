@@ -1,7 +1,5 @@
 import ddi.loader.neo4j.GraphDb
-import org.neo4j.driver.v1.Record
 import org.neo4j.driver.v1.Transaction
-import org.neo4j.driver.v1.Values
 
 /**
  * Charge un fichier d'établissements.
