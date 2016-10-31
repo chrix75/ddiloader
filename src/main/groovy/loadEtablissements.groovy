@@ -27,7 +27,9 @@ def files = args.collect {
 
 def loader = new EtablissementsLoader()
 
-GParsPool.withPool(2) {
+int reservedCores = Math.ceil(Runtime.runtime.availableProcessors() / 2)
+
+GParsPool.withPool(reservedCores) {
     files.eachParallel { File f ->
         loader.loadFile(f)
     }
