@@ -58,9 +58,9 @@ class EtablissementsLoader {
         def apenParams = [:]
         def entrParams = [:]
 
-        def db = new GraphDb('neo4j', 'ddi', file)
+        def db = new GraphDb('neo4j', 'ddi')
 
-        db.load { Transaction tx, Map<String, String> record ->
+        db.load(file) { Transaction tx, Map<String, String> record ->
             etabParams['siret'] = Long.parseLong(record['SIRET'])
             etabParams['rs'] = record['L1_NOMEN']
             etabParams['rs2'] = record['L2_COMP']

@@ -12,33 +12,19 @@ import org.neo4j.driver.v1.Session
 class GraphDb {
 
     private Driver driver
-    private Session session
     private CsvHeader csvHeader
-    private File inputFile
     private Neo4jAuth auth
 
-    GraphDb(String user, String pwd, File f) {
-        this.inputFile = f
+    GraphDb(String user, String pwd) {
         this.auth = [user, pwd] as Neo4jAuth
     }
 
     private Session connect() {
-        if (session) {
-            return session
-        }
-
         driver = GraphDatabase.driver("bolt://localhost", AuthTokens.basic(auth.user, auth.pwd))
-        session = driver.session()
-
-        return session
+        return driver.session()
     }
 
-    void close() {
-        session.close()
-        driver.close()
-    }
-
-    void load(Closure fn) {
+    void load(File inputFile, Closure fn) {
         println "Connection to the DB"
         def session = connect()
 
@@ -71,7 +57,7 @@ class GraphDb {
                     totalDuration += duration
                 }
 
-                if (count % 1000 == 0) {
+                if (count % 750 == 0) {
                     tx.success()
                     tx.close()
                     tx = session.beginTransaction()
@@ -90,8 +76,9 @@ class GraphDb {
             tx.close()
         } finally {
             println "Close the DB connection"
-            close()
+            session.close()
             println "File processing duration: ${totalDuration / 1000} s"
+            reader.close()
         }
     }
 }
