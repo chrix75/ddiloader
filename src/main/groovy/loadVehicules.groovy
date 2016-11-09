@@ -25,15 +25,10 @@ if (!inputFile.exists()) {
 def dateConverter = new DateConverter()
 
 // Db
-def db = new GraphDb('neo4j', 'ddi', inputFile)
+def db = new GraphDb('neo4j', 'ddi')
 
 def queryImmat = 'create (v:Vehicule {' +
-        'id: {id},' +
-        'name: {name},' +
         'immat: {immat},' +
-        'topGenre: {topGenre},' +
-        'energie: {energie},' +
-        'marque: {marque},' +
         'premiereCirculation: {date},' +
         'co2: {co2},' +
         'neuf: {neuf}' +
@@ -42,23 +37,45 @@ def queryImmat = 'create (v:Vehicule {' +
         'match (e:Entreprise {siren: {siren}}) ' +
         'create (e)-[:POSSEDE]->(v)'
 
-int id = 0
-def params = [:]
-db.load { Transaction tx, Map<String, String> record ->
-    ++id
+def queryMarque = 'merge (m:Marque {nom: {marque}}) ' +
+        'with m ' +
+        'match (v:Vehicule {immat: {immat}}) ' +
+        'create (v)-[:EST_UNE]->(m)'
 
+def queryTopGenre = 'merge (g:TopGenre {nom: {topGenre}}) ' +
+        'with g ' +
+        'match (v:Vehicule {immat: {immat}}) ' +
+        'create (v)-[:A_TOPGENRE]->(g)'
+
+def queryEnergie = 'merge (e:Energie {nom: {energie}}) ' +
+        'with e ' +
+        'match (v:Vehicule {immat: {immat}}) ' +
+        'create (v)-[:ROULE_AU]->(e)'
+
+db.load(inputFile) { Transaction tx, Map<String, String> record ->
     String co2Value = record['IM_TXCO2']
+    boolean isNeuf = record['IM_NEUFOCCAS'] == 'N'
 
-    params['siren'] = Long.parseLong(record['SIREN'])
-    params['id'] = id
-    params['name'] = null
-    params['topGenre'] = record['IM_CDTOPGENRE']
-    params['marque'] = record['IM_CDMARQUE']
-    params['energie'] = record['IM_CDTYPENE']
-    params['immat'] = record['IM_NUMIMMAT']
-    params['date'] = dateConverter.convertDate(record['IM_DAT1MCIR'])
-    params['co2'] = co2Value ? Integer.parseInt(co2Value) : null
-    params['neuf'] = record['IM_NEUFOCCAS'] == 'N'
+    tx.run(queryImmat, [
+            'immat' : record['IM_NUMIMMAT'],
+            'date' : dateConverter.convertDate(record['IM_DAT1MCIR']),
+            'co2' : co2Value ? Integer.parseInt(co2Value) : null,
+            'neuf' : isNeuf,
+            'siren' : Long.parseLong(record['SIREN'])
+    ])
 
-    tx.run(queryImmat, params)
+    tx.run(queryEnergie, [
+            'energie' : record['IM_CDTYPENE'],
+            'immat' : record['IM_NUMIMMAT']
+    ])
+
+    tx.run(queryMarque, [
+            'marque' : record['IM_CDMARQUE'],
+            'immat' : record['IM_NUMIMMAT']
+    ])
+
+    tx.run(queryTopGenre, [
+            'topGenre' : record['IM_CDTOPGENRE'],
+            'immat' : record['IM_NUMIMMAT']
+    ])
 }
