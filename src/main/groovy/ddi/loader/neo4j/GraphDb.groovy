@@ -19,7 +19,7 @@ class GraphDb {
         this.auth = [user, pwd] as Neo4jAuth
     }
 
-    private Session connect() {
+    public Session connect() {
         driver = GraphDatabase.driver("bolt://localhost", AuthTokens.basic(auth.user, auth.pwd))
         return driver.session()
     }

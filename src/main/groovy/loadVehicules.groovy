@@ -27,14 +27,14 @@ def dateConverter = new DateConverter()
 // Db
 def db = new GraphDb('neo4j', 'ddi')
 
-def queryImmat = 'create (v:Vehicule {' +
+def queryImmat = 'match (e:Entreprise {siren: {siren}}) ' +
+        'with e ' +
+        'create (v:Vehicule {' +
         'immat: {immat},' +
         'premiereCirculation: {date},' +
         'co2: {co2},' +
         'neuf: {neuf}' +
         '}) ' +
-        'with v ' +
-        'match (e:Entreprise {siren: {siren}}) ' +
         'create (e)-[:POSSEDE]->(v)'
 
 def queryMarque = 'merge (m:Marque {nom: {marque}}) ' +
@@ -52,30 +52,45 @@ def queryEnergie = 'merge (e:Energie {nom: {energie}}) ' +
         'match (v:Vehicule {immat: {immat}}) ' +
         'create (v)-[:ROULE_AU]->(e)'
 
+def queryEtablissementParc = 'match (t:Etablissement)<-[:GERE]-(:Entreprise {siren: {siren}}) ' +
+        'match (g:TopGenre {nom: {topGenre}}) ' +
+        'match (e:Energie {nom: {energie}}) ' +
+        'match (m:Marque  {nom: {marque}}) ' +
+        'merge (t)-[:POSSEDE]->(g) ' +
+        'merge (t)-[:POSSEDE]->(e) ' +
+        'merge (t)-[:POSSEDE]->(m) '
+
 db.load(inputFile) { Transaction tx, Map<String, String> record ->
     String co2Value = record['IM_TXCO2']
     boolean isNeuf = record['IM_NEUFOCCAS'] == 'N'
 
     tx.run(queryImmat, [
-            'immat' : record['IM_NUMIMMAT'],
+            'immat': record['IM_NUMIMMAT'],
             'date' : dateConverter.convertDate(record['IM_DAT1MCIR']),
-            'co2' : co2Value ? Integer.parseInt(co2Value) : null,
+            'co2'  : co2Value ? Integer.parseInt(co2Value) : null,
             'neuf' : isNeuf,
-            'siren' : Long.parseLong(record['SIREN'])
+            'siren': Long.parseLong(record['SIREN'])
     ])
 
     tx.run(queryEnergie, [
-            'energie' : record['IM_CDTYPENE'],
-            'immat' : record['IM_NUMIMMAT']
+            'energie': record['IM_CDTYPENE'],
+            'immat'  : record['IM_NUMIMMAT']
     ])
 
     tx.run(queryMarque, [
-            'marque' : record['IM_CDMARQUE'],
+            'marque': record['IM_CDMARQUE'],
             'immat' : record['IM_NUMIMMAT']
     ])
 
     tx.run(queryTopGenre, [
-            'topGenre' : record['IM_CDTOPGENRE'],
-            'immat' : record['IM_NUMIMMAT']
+            'topGenre': record['IM_CDTOPGENRE'],
+            'immat'   : record['IM_NUMIMMAT']
+    ])
+
+    tx.run(queryEtablissementParc, [
+            'siren': Long.parseLong(record['SIREN']),
+            'topGenre': record['IM_CDTOPGENRE'],
+            'energie': record['IM_CDTYPENE'],
+            'marque': record['IM_CDMARQUE']
     ])
 }

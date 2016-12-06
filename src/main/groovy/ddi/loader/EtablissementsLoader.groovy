@@ -37,7 +37,7 @@ class EtablissementsLoader {
             'merge (e)-[:COMME_ACTIVITE]->(apet3) ' +
             'merge (e)-[:COMME_ACTIVITE]->(apet2)'
 
-    private String queryEntreprise = 'merge (n:Entreprise { siren: {siren}, nbImmat: {nbImmat} }) ' +
+    private String queryEntreprise = 'merge (n:Entreprise { siren: {siren} }) ' +
             'with n ' +
             'match (e:Etablissement { siret: {siret} })' +
             'merge (n)-[:GERE]->(e)'
@@ -89,7 +89,6 @@ class EtablissementsLoader {
 
             entrParams['siren'] =  Long.parseLong(record['SIREN'])
             entrParams['siret'] =  Long.parseLong(record['SIRET'])
-            entrParams['nbImmat'] = Integer.parseInt(record['PA_NBIMMAT'] ? record['PA_NBIMMAT'] : '0')
             tx.run(queryEntreprise, entrParams)
 
             apenParams['code700'] =  record['APEN700']
